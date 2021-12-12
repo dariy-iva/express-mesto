@@ -16,13 +16,7 @@ module.exports.createUser = (req, res) => {
 module.exports.getUsers = (req, res) => {
   User.find({})
     .then((users) => res.status(200).send({ data: users }))
-    .catch((err) => {
-      if (err.name === "ValidationError") {
-        res.status(400).send({ message: "Переданы некорректные данные" });
-        return;
-      }
-      res.status(500).send({ message: "Произошла ошибка" });
-    });
+    .catch((err) => res.status(500).send({ message: "Произошла ошибка" }));
 };
 module.exports.getUser = (req, res) => {
   const { userId } = req.params;
@@ -31,15 +25,23 @@ module.exports.getUser = (req, res) => {
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === "CastError") {
+        res.status(400).send({ message: "Переданы некорректные данные" });
+        return;
+      } else if (err.name === "ReferenceError") {
         res.status(404).send({ message: "Пользователь не найден" });
         return;
+      } else {
+        res.status(500).send({ message: "Произошла ошибка" });
       }
-      res.status(500).send({ message: "Произошла ошибка" });
     });
 };
 module.exports.updateUserProfile = (req, res) => {
   const userId = req.user._id;
   const { name, about } = req.body;
+
+  if (!name || !about) {
+    return res.status(400).send({ message: "Переданы некорректные данные" });
+  }
 
   User.findByIdAndUpdate(
     userId,
@@ -52,6 +54,9 @@ module.exports.updateUserProfile = (req, res) => {
         res.status(400).send({ message: "Переданы некорректные данные" });
         return;
       } else if (err.name === "CastError") {
+        res.status(400).send({ message: "Переданы некорректные данные" });
+        return;
+      } else if (err.name === "ReferenceError") {
         res.status(404).send({ message: "Пользователь не найден" });
         return;
       }
@@ -61,6 +66,10 @@ module.exports.updateUserProfile = (req, res) => {
 module.exports.updateUserAvatar = (req, res) => {
   const userId = req.user._id;
   const { avatar } = req.body;
+
+  if (!avatar) {
+    return res.status(400).send({ message: "Переданы некорректные данные" });
+  }
 
   User.findByIdAndUpdate(
     userId,
@@ -73,6 +82,9 @@ module.exports.updateUserAvatar = (req, res) => {
         res.status(400).send({ message: "Переданы некорректные данные" });
         return;
       } else if (err.name === "CastError") {
+        res.status(400).send({ message: "Переданы некорректные данные" });
+        return;
+      } else if (err.name === "ReferenceError") {
         res.status(404).send({ message: "Пользователь не найден" });
         return;
       }
