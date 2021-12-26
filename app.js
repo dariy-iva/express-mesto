@@ -4,9 +4,10 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const mongoose = require("mongoose");
-const { celebrate, Joi } = require("celebrate");
+const { celebrate, Joi, errors } = require("celebrate");
 const { createUser, login } = require("./controllers/users");
 const { auth } = require("./middlewares/auth");
+const NotFoundError = require("./errors/not-found-err");
 
 const { PORT = 3000 } = process.env;
 
@@ -24,26 +25,40 @@ const limiter = rateLimit({
 
 app.use(limiter);
 app.use(cookieParser());
-app.post("/signin", celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().min(8)
-  })
-}), login);
-app.post("/signup", celebrate({
-  body: Joi.object().keys({
-    name: Joi.string().required().min(2).max(30),
-    about: Joi.string().required().min(2).max(30),
-    avatar: Joi.string().required().uri(),
-    email: Joi.string().required().email(),
-    password: Joi.string().required().min(8)
-  })
-}), createUser);
+app.post(
+  "/signin",
+  celebrate({
+    body: Joi.object().keys({
+      email: Joi.string().required().email(),
+      password: Joi.string().required().min(8),
+    }),
+  }),
+  login
+);
+app.post(
+  "/signup",
+  celebrate({
+    body: Joi.object().keys({
+      name: Joi.string().min(2).max(30),
+      about: Joi.string().min(2).max(30),
+      avatar: Joi.string().pattern(
+        /^((http(s)?):\/\/)(www\.)?[\w\-\.~:\/?#\[\]@!\$&'\(\)\*\+,;=.]+/
+      ),
+      email: Joi.string().required().email(),
+      password: Joi.string().required().min(8),
+    }),
+  }),
+  createUser
+);
 
 app.use(auth);
 app.use("/users", require("./routes/users"));
 app.use("/cards", require("./routes/cards"));
+app.use("*", (req, res, next) => {
+  next(new NotFoundError("Маршрут не найден"));
+});
 
+app.use(errors());
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
 
