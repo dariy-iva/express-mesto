@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { celebrate, Joi } = require("celebrate");
+const { isURL } = require("validator");
 const {
   createCard,
   getCards,
@@ -15,9 +16,12 @@ router.post(
       name: Joi.string().required().min(2).max(30),
       link: Joi.string()
         .required()
-        .pattern(
-          /^((http(s)?):\/\/)(www\.)?[\w\-\.~:\/?#\[\]@!\$&'\(\)\*\+,;=.]+/
-        ),
+        .custom((value) => {
+          if (!isURL(value, { require_protocol: true })) {
+            throw new Error("Неправильный формат ссылки");
+          }
+          return value;
+        }),
     }),
   }),
   createCard

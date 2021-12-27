@@ -8,6 +8,7 @@ const { celebrate, Joi, errors } = require("celebrate");
 const { createUser, login } = require("./controllers/users");
 const { auth } = require("./middlewares/auth");
 const NotFoundError = require("./errors/not-found-err");
+const { isURL } = require("validator");
 
 const { PORT = 3000 } = process.env;
 
@@ -41,9 +42,12 @@ app.post(
     body: Joi.object().keys({
       name: Joi.string().min(2).max(30),
       about: Joi.string().min(2).max(30),
-      avatar: Joi.string().pattern(
-        /^((http(s)?):\/\/)(www\.)?[\w\-\.~:\/?#\[\]@!\$&'\(\)\*\+,;=.]+/
-      ),
+      avatar: Joi.string().custom((value) => {
+        if (!isURL(value, { require_protocol: true })) {
+          throw new Error("Неправильный формат ссылки");
+        }
+        return value;
+      }),
       email: Joi.string().required().email(),
       password: Joi.string().required().min(8),
     }),

@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { celebrate, Joi } = require("celebrate");
+const { isURL } = require("validator");
 const {
   getUsers,
   getUser,
@@ -35,9 +36,12 @@ router.patch(
     body: Joi.object().keys({
       avatar: Joi.string()
         .required()
-        .pattern(
-          /^((http(s)?):\/\/)(www\.)?[\w\-\.~:\/?#\[\]@!\$&'\(\)\*\+,;=.]+/
-        ),
+        .custom((value) => {
+          if (!isURL(value, { require_protocol: true })) {
+            throw new Error("Неправильный формат ссылки");
+          }
+          return value;
+        }),
     }),
   }),
   updateUserAvatar
